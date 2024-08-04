@@ -1,6 +1,7 @@
 package org.edu.ifmg.client.model;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
@@ -14,6 +15,7 @@ import java.util.UUID;
 @Setter
 public abstract class BaseModel {
     @Id
+    @GeneratedValue
     @Column(updatable = false, columnDefinition = "uuid")
     protected UUID id;
 

@@ -10,13 +10,11 @@ import java.util.UUID;
 @Data
 public class RegisterClientDto {
 
-    @NotBlank private String cpf;
-    @NotBlank private String name;
-    @Min(0) @Max(200) private Integer age;
+    @NotBlank(message = "O cpf deve ser informado") private String cpf;
+    @NotBlank(message = "O nome deve ser informado") private String name;
+    @Min(value = 1, message = "Digite um valor válido para a idade") @Max(value = 200, message = "Digite um valor válido para a idade") private Integer age;
 
     public Client toModel(){
-        var client = Client.builder().name(this.name).age(this.age).cpf(this.cpf).build();
-        client.setId(UUID.randomUUID());
-        return client;
+        return Client.builder().name(this.name).age(this.age).cpf(this.cpf).build();
     }
 }
