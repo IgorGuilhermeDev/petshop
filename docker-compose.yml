@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+#  msclient-postgres:
+#    image: postgis/postgis:16-3.4-alpine
+#    container_name: ms-client-postgres
+#    ports:
+#      - "5433:5432"
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgres
+#      POSTGRES_DB: ms-client-db
+#    volumes:
+#      - ${DOCKER_THUNDERA_DB_VOLUME}:/var/lib/postgresql/data
+#    networks:
+#      - thundera-postgres-network
+
+  discovery:
+    container_name: discovery-inst
+    image: discovery
+    build:
+      context: ./discovery.server
+      dockerfile: docker/Dockerfile
+    ports:
+      - "${DISCOVERY_SERVER_PORT}:${DISCOVERY_SERVER_PORT}"
+    networks:
+      - dicovery-gateway-network
+
+  gateway:
+    container_name: gateway-inst
+    image: gateway
+    build:
+      context: ./gateway
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - DISCOVERY_SERVER_PORT=${DISCOVERY_SERVER_PORT}
+      - DISCOVERY_SERVER_URL=${DISCOVERY_SERVER_URL}
+    depends_on:
+      - discovery
+    networks:
+      - dicovery-gateway-network
+
+networks:
+  dicovery-gateway-network:
+    driver: bridge
+
