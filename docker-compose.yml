@@ -1,30 +1,44 @@
 version: "3.8"
 
 services:
-#  msclient-postgres:
-#    image: postgis/postgis:16-3.4-alpine
-#    container_name: ms-client-postgres
-#    ports:
-#      - "5433:5432"
-#    environment:
-#      POSTGRES_USER: postgres
-#      POSTGRES_PASSWORD: postgres
-#      POSTGRES_DB: ms-client-db
-#    volumes:
-#      - ${DOCKER_THUNDERA_DB_VOLUME}:/var/lib/postgresql/data
-#    networks:
-#      - thundera-postgres-network
-
+  msclient:
+    container_name: ms-client-inst
+    image: ms-client
+    build:
+      context: ./client
+      dockerfile: docker/Dockerfile
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://${DISCOVERY_SERVER_URL}:${DISCOVERY_SERVER_PORT}/eureka/apps/client"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "8082:8082"
+    environment:
+      - DISCOVERY_SERVER_PORT=${DISCOVERY_SERVER_PORT}
+      - DISCOVERY_SERVER_URL=${DISCOVERY_SERVER_URL}
+    networks:
+      - dicovery-client-newtwork
+      - gateway-client-network
+    depends_on:
+      discovery:
+        condition: service_healthy
   discovery:
     container_name: discovery-inst
     image: discovery
     build:
       context: ./discovery.server
       dockerfile: docker/Dockerfile
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://${DISCOVERY_SERVER_URL}:${DISCOVERY_SERVER_PORT}/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     ports:
       - "${DISCOVERY_SERVER_PORT}:${DISCOVERY_SERVER_PORT}"
     networks:
       - dicovery-gateway-network
+      - dicovery-client-newtwork
 
   gateway:
     container_name: gateway-inst
@@ -38,11 +52,19 @@ services:
       - DISCOVERY_SERVER_PORT=${DISCOVERY_SERVER_PORT}
       - DISCOVERY_SERVER_URL=${DISCOVERY_SERVER_URL}
     depends_on:
-      - discovery
+      discovery:
+        condition: service_healthy
+      msclient:
+        condition: service_healthy
     networks:
       - dicovery-gateway-network
+      - gateway-client-network
 
 networks:
   dicovery-gateway-network:
+    driver: bridge
+  dicovery-client-newtwork:
+    driver: bridge
+  gateway-client-network:
     driver: bridge
 
