@@ -2,7 +2,7 @@ spring:
   datasource:
     platform: postgres
     driverClassName: org.postgresql.Driver
-    url: jdbc:postgresql://postgres-inst-2:5432/postgres
+    url: jdbc:postgresql://postgres-animal-inst:5432/postgres
     username: postgres
     password: postgres
   jpa:
