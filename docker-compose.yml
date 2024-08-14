@@ -1,6 +1,54 @@
 version: "3.8"
 
 services:
+  postgres-animal:
+    image: postgres:15.2
+    container_name: postgres-animal-inst
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./postgres-data-animal:/var/lib/postgresql/data
+
+  postgres-client:
+    image: postgres:15.2
+    container_name: postgres-client-inst
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    networks:
+      - postgres-client
+  cloudserver:
+    container_name: cloudserver-inst
+    image: cloudserver
+    build:
+      context: ./cloud-config
+      dockerfile: docker/Dockerfile
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "http://${DISCOVERY_SERVER_URL}:${DISCOVERY_SERVER_PORT}/eureka/apps/cloud-config"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    ports:
+      - "7000:7000"
+    environment:
+      - DISCOVERY_SERVER_PORT=${DISCOVERY_SERVER_PORT}
+      - DISCOVERY_SERVER_URL=${DISCOVERY_SERVER_URL}
+    depends_on:
+      discovery:
+        condition: service_healthy
+    networks:
+      - discovery-cloud-server-network
+      - config-client
+
   msclient:
     container_name: ms-client-inst
     image: ms-client
@@ -11,7 +59,7 @@ services:
       test: ["CMD", "wget", "--spider", "http://${DISCOVERY_SERVER_URL}:${DISCOVERY_SERVER_PORT}/eureka/apps/client"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 15
     ports:
       - "8082:8082"
     environment:
@@ -20,8 +68,12 @@ services:
     networks:
       - dicovery-client-newtwork
       - gateway-client-network
+      - config-client
+      - postgres-client
     depends_on:
       discovery:
+        condition: service_healthy
+      cloudserver:
         condition: service_healthy
   discovery:
     container_name: discovery-inst
@@ -39,6 +91,7 @@ services:
     networks:
       - dicovery-gateway-network
       - dicovery-client-newtwork
+      - discovery-cloud-server-network
 
   gateway:
     container_name: gateway-inst
@@ -67,4 +120,12 @@ networks:
     driver: bridge
   gateway-client-network:
     driver: bridge
+  discovery-cloud-server-network:
+    driver: bridge
+  config-client:
+    driver: bridge
+  postgres-client:
+    driver: bridge
+  postgres-animal:
+      driver: bridge
 
